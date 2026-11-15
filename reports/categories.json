@@ -1,0 +1,11 @@
+{
+ "admin_answer_agreement": {
+  "n": 240,
+  "accuracy": 0.8875
+ },
+ "silver_holdout": 0.807,
+ "silver_in_sample": {
+  "n": 6000,
+  "accuracy": 0.923
+ }
+}

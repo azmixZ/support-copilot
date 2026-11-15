@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Copilot · Apex Protocol</title>
+<style>
+:root{--bg:#0f1115;--panel:#171a21;--ink:#e6e8ec;--muted:#98a2b3;--accent:#8b7cf6;--ok:#32d583;--warn:#fdb022;--line:#2a2f3a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:radial-gradient(1200px 600px at 85% -10%,#2a2150 0%,transparent 60%),radial-gradient(900px 500px at -10% 110%,#16324a 0%,transparent 55%),var(--bg);background-attachment:fixed;color:var(--ink);font:18px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.slide{display:none;min-height:100vh;padding:6vh 7vw;flex-direction:column;justify-content:center;gap:2.2vh}
+.slide.on{display:flex}
+h1{font-size:clamp(32px,5vw,64px);margin:0;line-height:1.1}
+h2{font-size:clamp(26px,3.4vw,44px);margin:0}
+.lead{font-size:clamp(18px,2vw,26px);color:var(--muted);max-width:60ch}
+.accent{color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.big{font-size:clamp(30px,4vw,54px);font-weight:700;color:var(--accent);line-height:1}
+.card p{margin:.4em 0 0;color:var(--muted)}
+ul{margin:0;padding-left:1.1em}
+li{margin:.35em 0}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.flow span{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.flow b{color:var(--muted);font-weight:400}
+table{border-collapse:collapse;width:100%;max-width:900px}
+td,th{border-bottom:1px solid var(--line);padding:10px 12px;text-align:left}
+th{color:var(--muted);font-weight:500}
+.ok{color:var(--ok)}.warn{color:var(--warn)}
+.draft{background:var(--panel);border-left:4px solid var(--accent);padding:14px 18px;border-radius:0 12px 12px 0;max-width:900px}
+.draft small{display:block;color:var(--muted);margin-bottom:6px}
+nav{position:fixed;bottom:16px;right:20px;color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center}
+nav button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+.badge{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:6px 14px;color:var(--muted);font-size:15px;width:max-content;max-width:100%}
+.badge i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;max-width:900px}
+.kpi{background:rgba(23,26,33,.75);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kpi b{display:block;font-size:clamp(26px,3.2vw,40px);color:var(--accent);line-height:1.1}
+.kpi span{color:var(--muted);font-size:15px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;counter-reset:st;max-width:1100px}
+.step{background:rgba(23,26,33,.75);border:1px solid var(--line);border-radius:12px;padding:12px 14px 12px 50px;position:relative;counter-increment:st}
+.step::before{content:counter(st);position:absolute;left:14px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#0f1115;font-weight:700;display:grid;place-items:center;font-size:14px}
+.step small{display:block;color:var(--muted)}
+@media (max-width:700px){html,body{font-size:16px}.slide{padding:5vh 5vw 12vh}}
+</style>
+</head>
+<body>
+
+<section class="slide on">
+  <div class="badge"><i></i>Decentrathon 6.0 · кейс Grand Mobile · Apex Protocol</div>
+  <h1>Support <span class="accent">Copilot</span></h1>
+  <div class="lead">Разбирает жалобы и репорты игроков, пишет черновик ответа со ссылкой на <span class="accent">настоящий</span> пункт правил и честно говорит, когда нужен человек. Полностью локально.</div>
+  <div class="kpis">
+    <div class="kpi"><b>0</b><span>выдуманных пунктов правил</span></div>
+    <div class="kpi"><b>80.7%</b><span>точность категории</span></div>
+    <div class="kpi"><b>&lt;0.01 с</b><span>на обращение, CPU</span></div>
+    <div class="kpi"><b>$0</b><span>без внешних API</span></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Проблема</h2>
+  <div class="grid">
+    <div class="card"><div class="big">500k+</div><p>игроков в день, жалобы и репорты на 6 языках</p></div>
+    <div class="card"><div class="big">вручную</div><p>админы разбирают поток прямо из игры</p></div>
+    <div class="card"><div class="big">шаблоны</div><p>большая часть ответов однотипна: «нужны доказательства», «опишите проблему»</p></div>
+    <div class="card"><div class="big">риск</div><p>взломы, платежи и угрозы тонут в «помогите» и «ау»</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Как это работает</h2>
+  <div class="steps">
+    <div class="step">Язык и графика<small>ru · kk · uz · en · транслит, казахский из cp1251</small></div>
+    <div class="step">Категория и приоритет<small>своя модель, 80.7%</small></div>
+    <div class="step">Спам и дубли<small>включая неявные</small></div>
+    <div class="step">Факты<small>ник, пункты, доказательства, регион</small></div>
+    <div class="step">Главный пункт правил<small>своя модель, 90% совпадений с админом</small></div>
+    <div class="step">Черновик<small>на языке игрока, казахский — казахскими буквами</small></div>
+    <div class="step">Проверки<small>пункт существует, нет наказаний и обещаний</small></div>
+    <div class="step">Человек или авто<small>спорное всегда уходит админу</small></div>
+  </div>
+  <div class="lead">Без внешних API: тексты игроков не покидают сервер. Ответ меньше чем за 0.01 секунды на обычном CPU.</div>
+</section>
+
+<section class="slide">
+  <h2>Черновик, который можно отправлять</h2>
+  <div class="draft"><small>Жалоба · ru · complaint.insult · p2 · нужен человек</small>
+    Приветствую! Жалоба на игрока Arman_Petrov принята и передана администратору. По описанию это похоже на нарушение пункта 2.1 ОП. Решение примет администратор после проверки доказательств. Спасибо за обращение.</div>
+  <div class="draft"><small>Жалоба · uz · complaint.insult</small>
+    Hurmatli o'yinchi! Arman_Petrov o'yinchisi ustidan shikoyat qabul qilindi va administratorga yuborildi. Tavsifga ko'ra bu 2.1-band (OP) buzilishiga o'xshaydi… Hurmat bilan, GrandMobile Ma'muriyati</div>
+  <div class="draft"><small>Репорт · ru · report.question</small>
+    Ответ из базы знаний админов: путь в навигаторе игры к работе таксиста.</div>
+</section>
+
+<section class="slide">
+  <h2>Честность важнее красоты</h2>
+  <table>
+    <tr><th>Проверка на 1000 обращениях валидации</th><th>Результат</th></tr>
+    <tr><td>Выдуманных пунктов правил</td><td class="ok"><b>0</b></td></tr>
+    <tr><td>Обещаний разбана, возврата, наказания</td><td class="ok"><b>0</b></td></tr>
+    <tr><td>Платёж, аккаунт, апелляция без человека</td><td class="ok"><b>0</b></td></tr>
+    <tr><td>Главный пункт совпал с пунктом админа</td><td><b>90%</b></td></tr>
+    <tr><td>Категория угадана (отложенная выборка, 14 классов)</td><td><b>80.7%</b></td></tr>
+    <tr><td>Категория совпала с ответом админа</td><td><b>88.8%</b></td></tr>
+    <tr><td>Приоритет по правилу организаторов, macro-F1</td><td><b>0.87</b></td></tr>
+    <tr><td>Стоимость / p95</td><td><b>$0</b> / <b>0.007 с</b></td></tr>
+  </table>
+  <div class="lead">Наказание не пишем: ТЗ запрещает его обещать, и судья оценил такие черновики ниже (2.9 против 3.25). Вероятный вердикт видит только админ.</div>
+</section>
+
+<section class="slide">
+  <h2>Админка</h2>
+  <div class="grid">
+    <div class="card"><b>Массовые действия</b><p>отметить и отправить черновики, эскалировать, закрыть спам</p></div>
+    <div class="card"><b>Срочное сверху</b><p>аккаунт, платёж, угрозы: плашка и уведомление в браузере</p></div>
+    <div class="card"><b>История в карточке</b><p>прошлые жалобы на нарушителя и обращения заявителя</p></div>
+    <div class="card"><b>Учится на правках</b><p>исправленная админом категория идёт в переобучение (<code>make learn</code>), хранение 6 месяцев</p></div>
+  </div>
+  <div class="lead">Работает на телефоне. Плюс автоматические предложения новых шаблонов по кластерам обращений.</div>
+</section>
+
+<section class="slide">
+  <h2>Казахский и узбекский по-настоящему</h2>
+  <ul class="lead">
+    <li>Чиним казахские буквы из кодировки игры: ќ→қ, є→ә, ѕ→ң…</li>
+    <li>Казахский ответ — кириллицей с настоящими казахскими буквами, узбекский — латиницей, как пишут админы</li>
+    <li>Украинский не путаем с казахским, транслит «osk rodni» отвечаем по-русски</li>
+    <li>Русский текст на узбекском сервере — ответ по-русски</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h1>Готово к интеграции</h1>
+  <div class="lead">Один эндпоинт <code>POST /triage</code> по вашему контракту · <code>make predict</code> · Docker · 73 теста · локальные модели, переобучение одной командой, в том числе на правках админов.</div>
+  <div class="lead accent">Спасибо! Apex Protocol</div>
+</section>
+
+<nav><button id="prev">←</button><span id="pos"></span><button id="next">→</button></nav>
+<script>
+const s=[...document.querySelectorAll(".slide")];let i=0;
+function go(n){i=Math.max(0,Math.min(s.length-1,n));s.forEach((e,k)=>e.classList.toggle("on",k===i));document.getElementById("pos").textContent=`${i+1} / ${s.length}`}
+document.getElementById("prev").onclick=()=>go(i-1);document.getElementById("next").onclick=()=>go(i+1);
+addEventListener("keydown",e=>{if(["ArrowRight"," ","PageDown"].includes(e.key))go(i+1);if(["ArrowLeft","PageUp"].includes(e.key))go(i-1)});
+go(0);
+</script>
+</body>
+</html>

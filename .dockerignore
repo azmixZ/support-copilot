@@ -1,0 +1,9 @@
+.venv
+data
+models
+submission
+.env
+.git
+__pycache__
+scratch_explore
+.claude

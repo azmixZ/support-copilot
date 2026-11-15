@@ -1,0 +1,16 @@
+{
+ "complaints": 67755,
+ "flagged_share": 0.1017,
+ "admin_duplicates": 1460,
+ "recall_vs_admin_duplicates": 0.5979,
+ "precision_vs_admin_duplicates": 0.1267,
+ "f1_vs_admin_duplicates": 0.2092,
+ "valid_service_history_only": {
+  "tp": 0,
+  "fp": 3,
+  "fn": 18,
+  "precision": 0.0,
+  "recall": 0.0,
+  "f1": 0.0
+ }
+}

@@ -1,0 +1,16 @@
+# Grand Mobile case data, labels, trained weights and anything derived from the data must never be committed
+# (hackathon data terms): the repository contains code only.
+data/
+models/
+*.pkl
+*.jsonl
+*.jsonl.gz
+*.tgz
+submission/
+reports/examples.md
+reports/template_suggestions.md
+.env
+__pycache__/
+.venv/
+scratch_explore/
+.claude/

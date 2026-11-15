@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Support Copilot · очередь</title>
+<style>
+:root{
+  --bg:#f6f7f9;--panel:#fff;--ink:#16181d;--muted:#667085;--line:#e4e7ec;--accent:#5b4bdb;--accent-ink:#fff;
+  --p0:#d92d20;--p1:#f79009;--p2:#2e90fa;--p3:#98a2b3;--ok:#12b76a;--warn-bg:#fff6e5;--warn-ink:#93370d;
+  --urgent-bg:#fef3f2;--urgent-ink:#b42318;--sel:#efecff;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0f1115;--panel:#171a21;--ink:#e6e8ec;--muted:#98a2b3;--line:#2a2f3a;--accent:#8b7cf6;--accent-ink:#0f1115;
+  --warn-bg:#3a2a12;--warn-ink:#fdb022;--urgent-bg:#3b1414;--urgent-ink:#fda29b;--sel:#25213f;}}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:3;flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:700;line-height:1.2}
+header .stats{margin-left:auto;display:flex;gap:12px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+header .stats b{color:var(--ink)}
+button,select{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 11px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.danger{color:var(--p0)}
+#urgentBar{display:none;background:var(--urgent-bg);color:var(--urgent-ink);padding:8px 16px;font-weight:600;border-bottom:1px solid var(--line);cursor:pointer}
+main{display:grid;grid-template-columns:minmax(300px,420px) 1fr;height:calc(100vh - 54px)}
+#left{display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--panel);min-height:0}
+#toolbar{padding:8px 10px;border-bottom:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#toolbar .sep{flex:1}
+#bulk{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--sel)}
+#bulk[hidden]{display:none}
+#list{overflow:auto;flex:1}
+.item{display:flex;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start}
+.item:hover,.item.active{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.item.checked{background:var(--sel)}
+.item.urgent{box-shadow:inset 3px 0 0 var(--p0)}
+.item input{margin-top:3px}
+.item .body{min-width:0;flex:1}
+.item .top{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.item .txt{margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid var(--line)}
+.pri{color:#fff;border:none}
+.p0{background:var(--p0)}.p1{background:var(--p1)}.p2{background:var(--p2)}.p3{background:var(--p3)}
+.human{background:var(--warn-bg);color:var(--warn-ink);border-color:transparent}
+.auto{color:var(--ok)}
+.urg{background:var(--urgent-bg);color:var(--urgent-ink);border-color:transparent}
+#detail{overflow:auto;padding:18px 24px}
+.back{display:none;margin-bottom:10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.card h3{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.msg{padding:8px 10px;border-radius:8px;background:var(--bg);margin-bottom:6px;white-space:pre-wrap;word-break:break-word}
+.msg .role{font-size:11px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.facts div{background:var(--bg);border-radius:8px;padding:6px 10px;word-break:break-word}
+.facts span{display:block;font-size:11px;color:var(--muted)}
+textarea{width:100%;min-height:120px;font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical}
+.rule{font-size:13px;border-left:3px solid var(--accent);padding:4px 10px;margin:6px 0;background:var(--bg);border-radius:0 6px 6px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.reasons{margin:8px 0 0;padding-left:18px;color:var(--muted)}
+.hist{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hist h4{margin:0 0 6px;font-size:13px}
+.hrow{font-size:12px;border-top:1px solid var(--line);padding:6px 0}
+.hrow .meta{color:var(--muted)}
+.empty{color:var(--muted);padding:40px;text-align:center}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:8px;opacity:0;transition:.2s;z-index:9}
+.toast.show{opacity:1}
+@media (max-width:760px){
+  body{overflow-x:hidden}
+  main{grid-template-columns:minmax(0,1fr);height:auto}
+  #toolbar select{flex:1 1 0;min-width:0}
+  #toolbar .sep{display:none}
+  #left{height:calc(100vh - 54px)}
+  #detail{display:none;padding:12px}
+  body.show-detail #left{display:none}
+  body.show-detail #detail{display:block}
+  .back{display:inline-block}
+  .hist{grid-template-columns:1fr}
+  header .stats{width:100%;margin-left:0}
+}
+
+/* ---- look & feel ---- */
+:root{--grad:linear-gradient(135deg,#6d5dfc 0%,#9b5cf6 55%,#e26cf0 100%);--shadow:0 1px 2px rgba(16,24,40,.06),0 4px 14px rgba(16,24,40,.06)}
+@media (prefers-color-scheme:dark){:root{--shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35)}}
+header{box-shadow:var(--shadow);border-bottom:none}
+header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--grad)}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:30px;height:30px;border-radius:9px;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;letter-spacing:.02em;box-shadow:0 4px 12px rgba(109,93,252,.35)}
+.brand small{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:-2px}
+button.primary{background:var(--grad);border:none;box-shadow:0 4px 12px rgba(109,93,252,.3)}
+button.primary:hover{filter:brightness(1.07)}
+button{transition:border-color .15s,background .15s,filter .15s}
+.item{position:relative;padding-left:16px;transition:background .12s}
+.item::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--p3)}
+.item.pr-p1::before{background:var(--p1)}.item.pr-p2::before{background:var(--p2)}.item.pr-p0::before,.item.urgent::before{background:var(--p0)}
+.item.urgent{box-shadow:none}
+.card{box-shadow:var(--shadow);border-radius:14px}
+textarea:focus,select:focus{outline:2px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:1px}
+.rule{border-left-width:3px;border-image:var(--grad) 1}
+#urgentBar{background:linear-gradient(90deg,var(--urgent-bg),transparent)}
+.empty::before{content:"✓";color:var(--ok);font-weight:700;display:block;font-size:34px;margin-bottom:8px}
+
+/* ---- layout polish for wide screens ---- */
+#detail > *{max-width:980px;margin-left:auto;margin-right:auto}
+button,select{font-weight:500;font-size:13px}
+header h1{font-size:15px}
+header .stats{min-width:0;justify-content:flex-end;row-gap:2px;font-size:12px}
+header .stats span.s{white-space:nowrap}
+.facts{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.facts div{min-height:56px;display:flex;flex-direction:column;justify-content:center;gap:2px;font-size:13px}
+.facts select{width:100%;padding:3px 6px;font-size:13px}
+.facts .cat{grid-column:span 2;min-width:0}
+@media (max-width:760px){.facts .cat{grid-column:auto}}
+.msg{font-size:14px;line-height:1.5}
+textarea{font-size:14px;line-height:1.55;min-height:96px}
+.card h3{font-size:11px}
+.hist h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.hrow{line-height:1.45}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="logo" title="🐟 сделано с любовью · Apex Protocol">SC</div><h1>Support Copilot<small>Grand Mobile · очередь обращений</small></h1></div>
+  <button id="btnNew">+ Новое обращение</button>
+  <button id="btnNotify" title="Получать уведомления о срочных обращениях">🔔 Уведомления</button>
+  <div class="stats" id="stats"></div>
+</header>
+<div id="urgentBar"></div>
+<main>
+  <div id="left">
+    <div id="toolbar">
+      <label><input type="checkbox" id="selAll"> все</label>
+      <select id="filter">
+        <option value="all">Все</option>
+        <option value="human">Нужен человек</option>
+        <option value="auto">Можно отправить сразу</option>
+        <option value="spam">Спам и дубли</option>
+        <option value="urgent">Срочные</option>
+      </select>
+      <select id="sort">
+        <option value="priority">По приоритету</option>
+        <option value="time">По времени</option>
+      </select>
+      <span class="sep"></span>
+    </div>
+    <div id="bulk" hidden>
+      <b id="bulkN"></b>
+      <button class="primary" data-bulk="send">Отправить черновики</button>
+      <button data-bulk="escalate">Эскалировать</button>
+      <button class="danger" data-bulk="close">Закрыть (спам/дубль)</button>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div id="detail"><div class="empty">Выберите обращение слева</div></div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+if (!location.protocol.startsWith("http")) {  // opened as a file: the page needs the service for its data
+  document.body.innerHTML = '<div class="empty">Админка работает через сервис. Запустите <code>make admin</code> и откройте ' +
+    '<a href="http://localhost:8001/admin">http://localhost:8001/admin</a></div>';
+  throw new Error("open via http://localhost:8000/admin");
+}
+const CATS =["complaint.insult","complaint.cheat","complaint.dm","complaint.scam","complaint.rmt_ads","complaint.admin","complaint.other","complaint.invalid","report.question","report.help","report.complaint","report.account","report.payment","report.offtopic"];
+const PRI = {p0:0,p1:1,p2:2,p3:3};
+let items = [], view = [], current = null, checked = new Set(), rulesCache = {}, notified = new Set();
+const $ = s => document.querySelector(s);
+const esc = s => (s ?? "").toString().replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const idOf = it => it.ticket.ticket_id;
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");setTimeout(()=>e.classList.remove("show"),1800)}
+
+async function loadStats(){
+  const s = await fetch("/api/stats").then(r=>r.json());
+  const st = [["в очереди", items.length], ["обработано", s.handled], ["без правок", s.sent_as_is], ["правок", s.edited],
+              ["эскалаций", s.escalated], ["закрыто", s.closed]];
+  $("#stats").innerHTML = st.map(([k, v]) => `<span class="s">${k} <b>${v}</b></span>`).join("");
+}
+async function loadQueue(){
+  const q = await fetch("/api/queue").then(r=>r.json());
+  const live = items.filter(i=>(idOf(i)||"").startsWith("live-"));  // tickets typed in the form stay in the list
+  items = [...live, ...q.items]; render(); loadStats(); alertUrgent();
+}
+function alertUrgent(){
+  const urgent = items.filter(i=>i.urgent);
+  const bar = $("#urgentBar");
+  bar.style.display = urgent.length ? "block" : "none";
+  bar.textContent = `⚠ Срочных обращений: ${urgent.length} (аккаунт, платёж, угрозы) — нажмите, чтобы показать`;
+  document.title = (urgent.length ? `(${urgent.length}!) ` : "") + "Support Copilot · очередь";
+  const fresh = urgent.filter(i=>!notified.has(idOf(i)));
+  fresh.forEach(i=>notified.add(idOf(i)));
+  if (fresh.length && "Notification" in window && Notification.permission === "granted"){
+    new Notification("Support Copilot: срочное обращение", {body: (fresh[0].ticket.messages.find(m=>m.role==="player")||{}).text || fresh[0].pred.category});
+  }
+}
+function filtered(){
+  const f = $("#filter").value;
+  let v = items.filter(i => f==="all" || (f==="human" && i.pred.needs_human) || (f==="auto" && !i.pred.needs_human)
+    || (f==="spam" && i.pred.is_spam_or_duplicate) || (f==="urgent" && i.urgent));
+  if ($("#sort").value === "time") v = [...v].sort((a,b)=>(a.ticket.created_at||"").localeCompare(b.ticket.created_at||""));
+  else v = [...v].sort((a,b)=>(b.urgent-a.urgent)||(PRI[a.pred.priority]-PRI[b.pred.priority])||((b.pred.needs_human?1:0)-(a.pred.needs_human?1:0)));
+  return v;
+}
+function render(){
+  view = filtered();
+  $("#list").innerHTML = view.length ? view.map(it=>{
+    const p = it.pred, t = it.ticket, id = idOf(it), txt = (t.messages.find(m=>m.role==="player")||{}).text||"";
+    return `<div class="item pr-${p.priority} ${current===id?"active":""} ${checked.has(id)?"checked":""} ${it.urgent?"urgent":""}" data-id="${esc(id)}">
+      <input type="checkbox" ${checked.has(id)?"checked":""} aria-label="выбрать">
+      <div class="body"><div class="top"><span class="chip pri ${p.priority}">${p.priority}</span>${it.urgent?'<span class="chip urg">срочно</span>':''}<span>${esc(p.category)}</span><span>${esc(p.lang)}</span>
+      ${p.needs_human?'<span class="chip human">человек</span>':'<span class="chip auto">авто</span>'}
+      ${p.is_spam_or_duplicate?'<span class="chip">спам/дубль</span>':''}</div>
+      <div class="txt">${esc(txt)||"<i>пусто</i>"}</div></div></div>`}).join("") : '<div class="empty">Очередь пуста. Запустите <code>make demo</code>.</div>';
+  document.querySelectorAll(".item").forEach(e=>{
+    const id = e.dataset.id;
+    e.querySelector("input").onclick = ev => { ev.stopPropagation(); ev.target.checked ? checked.add(id) : checked.delete(id); render(); };
+    e.onclick = () => select(id);
+  });
+  $("#selAll").checked = view.length>0 && view.every(i=>checked.has(idOf(i)));
+  const n = [...checked].filter(id=>items.some(i=>idOf(i)===id)).length;
+  $("#bulk").hidden = n===0; $("#bulkN").textContent = `Выбрано: ${n}`;
+}
+async function rulesFor(cites){
+  const need = cites.filter(c=>!(c in rulesCache));
+  if(need.length){const r = await fetch("/api/rules?cites="+encodeURIComponent(need.join("|"))).then(r=>r.json()); Object.assign(rulesCache,r)}
+  return cites.map(c=>`<div class="rule"><b>${esc(c)}</b> — ${esc((rulesCache[c]||"").slice(0,280))}</div>`).join("");
+}
+function histRows(rows,total,emptyText){
+  if(!rows.length) return `<div class="hrow meta">${emptyText}</div>`;
+  return rows.map(r=>`<div class="hrow"><div class="meta">${esc((r.created_at||"").replace("T"," "))} · ${esc(r.kind)}${r.verdict?` · ${esc(r.verdict)}`:""}${r.category?` · ${esc(r.category)}`:""}</div>${esc(r.text)||"<i>пусто</i>"}</div>`).join("")
+    + (total>rows.length?`<div class="hrow meta">и ещё ${total-rows.length}</div>`:"");
+}
+async function select(id){
+  current = id; render();
+  const it = items.find(i=>idOf(i)===id); if(!it) return;
+  document.body.classList.add("show-detail");
+  const {ticket:t, pred:p} = it;
+  const msgs = t.messages.filter(m=>m.role!=="admin").map(m=>`<div class="msg"><div class="role">${esc(m.role)}</div>${esc(m.text)}</div>`).join("");
+  const real = t.messages.find(m=>m.role==="admin");
+  const ex = p.extracted;
+  const qs = new URLSearchParams({reporter:t.reporter_hash||"", reported:t.reported_hash||"", exclude:t.ticket_id||""});
+  const h = await fetch("/api/history?"+qs).then(r=>r.json());
+  $("#detail").innerHTML = `
+  <button class="back" id="back">← К очереди</button>
+  <div class="card"><h3>Обращение · ${esc(t.kind)} ${it.urgent?'<span class="chip urg">срочно</span>':''}</h3>${msgs}
+    <div class="facts" style="margin-top:10px">
+      <div><span>ник</span>${esc(ex.nickname)||"—"}</div><div><span>пункты от игрока</span>${esc(ex.rule_refs.join(", "))||"—"}</div>
+      <div><span>доказательства</span>${ex.has_evidence?"есть":"нет"}</div><div><span>регион</span>${esc(ex.server)||"—"}</div>
+      <div><span>приоритет</span>${esc(p.priority)}</div><div><span>уверенность</span>${p.confidence}</div>
+      <div class="cat"><span>категория</span><select id="cat">${CATS.map(c=>`<option ${c===p.category?"selected":""}>${c}</option>`).join("")}</select></div>
+    </div>
+    <ul class="reasons">${p.reasons.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></div>
+  <div class="card"><h3>Черновик ответа (${esc(p.draft_reply.lang)})</h3>
+    <textarea id="draft">${esc(p.draft_reply.text)}</textarea>
+    <div id="rules">${await rulesFor(p.draft_reply.cited)}</div>
+    <div class="actions">
+      <button class="primary" id="send">Отправить</button>
+      <button id="edit">Сохранить правку и отправить</button>
+      <button class="danger" id="esc">Эскалировать</button>
+    </div></div>
+  <div class="card"><h3>История</h3><div class="hist">
+    <div><h4>Жалобы на ${esc(ex.nickname||"обвиняемого")} (${h.against_accused_total})</h4>${histRows(h.against_accused,h.against_accused_total,"нет прошлых жалоб")}</div>
+    <div><h4>Обращения заявителя (${h.from_reporter_total})</h4>${histRows(h.from_reporter,h.from_reporter_total,"нет прошлых обращений")}</div>
+  </div></div>
+  ${real?`<div class="card"><h3>Реальный ответ администратора (для сравнения)</h3><div class="msg">${esc(real.text)}</div></div>`:""}`;
+  $("#back").onclick=()=>{document.body.classList.remove("show-detail")};
+  $("#send").onclick=()=>act("send"); $("#edit").onclick=()=>act("edit"); $("#esc").onclick=()=>act("escalate");
+}
+function fbFor(it, action, final, cat){
+  const p = it.pred;
+  const t = it.ticket;  // the ticket travels with the edit, so the edit can be used for training later
+  return {ticket_id:idOf(it)||("live-"+Date.now()), action, draft_original:p.draft_reply.text, draft_final:final ?? p.draft_reply.text,
+          category:p.category, priority:p.priority, category_corrected: cat && cat!==p.category ? cat : null,
+          ticket:{kind:t.kind, messages:t.messages.filter(m=>m.role!=="admin"), rule_refs_raw:t.rule_refs_raw||null,
+                  images_count:t.images_count ?? null, region:t.region||null}};
+}
+function removeIds(ids){
+  items = items.filter(i=>!ids.has(idOf(i))); ids.forEach(id=>checked.delete(id));
+  if (ids.has(current)) { current=null; $("#detail").innerHTML='<div class="empty">Готово. Выберите следующее обращение</div>'; document.body.classList.remove("show-detail"); }
+  render(); loadStats(); alertUrgent();
+}
+async function act(action){
+  const it = items.find(i=>idOf(i)===current); if(!it) return;
+  await fetch("/api/feedback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(fbFor(it,action,$("#draft").value,$("#cat").value))});
+  toast({send:"Отправлено",edit:"Правка сохранена",escalate:"Передано старшему админу"}[action]);
+  removeIds(new Set([current]));
+}
+document.querySelectorAll("[data-bulk]").forEach(b=>b.onclick=async()=>{
+  const action = b.dataset.bulk;
+  const sel = items.filter(i=>checked.has(idOf(i)));
+  if(!sel.length) return;
+  await fetch("/api/feedback/bulk",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({action, items: sel.map(i=>fbFor(i,action))})});
+  toast({send:`Отправлено: ${sel.length}`,escalate:`Эскалировано: ${sel.length}`,close:`Закрыто: ${sel.length}`}[action]);
+  removeIds(new Set(sel.map(idOf)));
+});
+$("#selAll").onchange = e => { view.forEach(i => e.target.checked ? checked.add(idOf(i)) : checked.delete(idOf(i))); render(); };
+$("#filter").onchange = render; $("#sort").onchange = render;
+$("#urgentBar").onclick = () => { $("#filter").value="urgent"; render(); };
+$("#btnNotify").onclick = async () => {
+  if (!("Notification" in window)) return toast("Браузер не поддерживает уведомления");
+  const p = await Notification.requestPermission(); toast(p==="granted"?"Уведомления включены":"Уведомления не разрешены");
+};
+$("#btnNew").onclick=()=>{
+  current=null; render(); document.body.classList.add("show-detail");
+  $("#detail").innerHTML=`<button class="back" id="back">← К очереди</button><div class="card"><h3>Новое обращение</h3>
+    <select id="kind"><option>complaint</option><option>report</option></select>
+    <textarea id="ntext" placeholder="Текст игрока, например: Arman_Petrov оскорблял меня и мою семью в чате, скрины есть, 2.1 ОП"></textarea>
+    <label>вложений: <input id="natt" type="number" value="1" min="0" style="width:60px"></label>
+    <div class="actions"><button class="primary" id="go">Разобрать</button></div></div>`;
+  $("#back").onclick=()=>{document.body.classList.remove("show-detail")};
+  $("#go").onclick=async()=>{
+    $("#go").disabled=true; $("#go").textContent="Разбираю…"; const t0=performance.now();
+    const ticket={kind:$("#kind").value,messages:[{role:"player",text:$("#ntext").value,attachments:+$("#natt").value}]};
+    const pred=await fetch("/api/triage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(ticket)}).then(r=>r.json());
+    const it={ticket:{...ticket,ticket_id:"live-"+Date.now(),created_at:new Date().toISOString().slice(0,16)},pred};
+    it.urgent = pred.priority==="p0" || ["report.account","report.payment"].includes(pred.category) || pred.reasons.some(r=>r.includes("угроз"));
+    items.unshift(it); await select(idOf(it)); alertUrgent();
+    toast(`Готово за ${Math.round(performance.now()-t0)} мс`);
+  };
+};
+console.log("%c🐟 Support Copilot · Apex Protocol · сделано с любовью","color:#9b5cf6;font-size:14px");
+loadQueue();
+setInterval(loadQueue, 30000);  // new tickets and urgent alerts without reload
+</script>
+</body>
+</html>
