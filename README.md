@@ -1,60 +1,62 @@
+**English** · [Русский](README.ru.md)
+
 # Support Copilot · Apex Protocol
 
-Решение кейса 03 «Support Copilot» (Grand Mobile × Decentrathon 6.0).
+Solution to case 03 "Support Copilot" (Grand Mobile × Decentrathon 6.0).
 
-> **Данные, разметка и обученные веса в репозиторий не входят.** По условиям хакатона данные Grand Mobile и всё, что из них получено, публиковать нельзя. Здесь только код, отчёт и документы. Чтобы запустить сервис, нужен архив кейса, который выдавали участникам. Примеры в тестах и документах — наши собственные фразы; ник `Arman_Petrov` взят из примера в условии кейса.
+> **The data, the labels and the trained weights are not part of this repository.** Under the hackathon rules, Grand Mobile data and anything derived from it must not be published. Only the code, the report and the documents are here. To run the service you need the case archive that was given to participants. Examples in tests and documents are our own phrases; the nickname `Arman_Petrov` comes from the example in the case statement.
 
-Сервис разбирает обращения игроков **полностью локально**, без внешних API: тексты игроков не покидают сервер. Что он делает:
-- определяет язык (русский, казахский, узбекский, английский; кириллица, латиница и транслит), категорию и приоритет;
-- отсеивает спам и дубли, в том числе неявные;
-- извлекает факты: ник, пункты правил, доказательства, регион сервера;
-- пишет черновик ответа на языке игрока со ссылкой на проверенный пункт правил;
-- помечает, когда нужен человек.
+The service triages player tickets **fully locally**, with no external APIs: player texts never leave the server. What it does:
+- detects the language (Russian, Kazakh, Uzbek, English; Cyrillic, Latin script and transliteration), the category and the priority;
+- filters out spam and duplicates, including implicit ones;
+- extracts facts: nickname, rule references, evidence, server region;
+- drafts a reply in the player's language that cites a verified rule;
+- flags when a human is needed.
 
-Ответ занимает несколько миллисекунд на обычном CPU (p95 ≈ 7 мс).
+A response takes a few milliseconds on an ordinary CPU (p95 ≈ 7 ms).
 
-**Документы:** [отчёт с метриками и примерами](REPORT.md) · [презентация](docs/presentation.html) (открыть в браузере, листать стрелками) · [текст питча](docs/PITCH.md)
+**Documents:** [report with metrics and examples](REPORT.md) · [presentation](docs/presentation.html) (open in a browser, flip with the arrow keys) · [pitch text](docs/PITCH.md) (Russian)
 
 | | |
 |---|---|
-| Выдуманных пунктов правил | **0** на 1000 обращений валидации |
-| Точность категории | **80.7%** против LLM-разметки (14 категорий, отложенная выборка), **88.8%** совпадений с ответами админов |
-| Приоритет | macro-F1 **0.87** по правилу организаторов (тип нарушения) |
-| Главный пункт = пункт админа | **90%** |
-| Скорость / цена | p95 **7 мс** на CPU / **$0** |
+| Invented rule references | **0** on 1000 validation tickets |
+| Category accuracy | **80.7%** against LLM labels (14 categories, held-out set), **88.8%** agreement with admin answers |
+| Priority | macro-F1 **0.87** by the organizers' rule (violation type) |
+| Main rule = the admin's rule | **90%** |
+| Speed / cost | p95 **7 ms** on CPU / **$0** |
 
-## Быстрый старт
+## Quick start
 
-Нужен Python 3.10+ (проверено на 3.12 в Docker и 3.14 на Windows).
+Python 3.10+ is required (tested on 3.12 in Docker and 3.14 on Windows).
 
 ```bash
 python3 -m venv .venv && . .venv/bin/activate     # Windows: python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
-mkdir -p data && tar -xzf grand-support-copilot-handout-2026-10-27.tgz -C data   # архив кейса -> data/handout/
-#   (внутри: rules.json, taxonomy.json, tickets_train.jsonl.gz, tickets_valid.jsonl)
-make build                                         # модели, база знаний и история (~2 мин, локально)
-make predict IN=tickets.jsonl OUT=pred.jsonl       # пакетный прогноз (CLI)
-make serve                                         # сервис POST /triage на :8000
-make admin                                         # админка (бонус) на http://localhost:8001/admin
-make demo                                          # очередь для админки из обращений валидации
-make test                                          # 73 теста (нужны данные кейса в data/handout)
-make eval                                          # метрики на валидации -> reports/metrics.json
+mkdir -p data && tar -xzf grand-support-copilot-handout-2026-10-27.tgz -C data   # case archive -> data/handout/
+#   (inside: rules.json, taxonomy.json, tickets_train.jsonl.gz, tickets_valid.jsonl)
+make build                                         # models, knowledge base and history (~2 min, local)
+make predict IN=tickets.jsonl OUT=pred.jsonl       # batch prediction (CLI)
+make serve                                         # service: POST /triage on :8000
+make admin                                         # admin UI (bonus) at http://localhost:8001/admin
+make demo                                          # admin queue built from validation tickets
+make test                                          # 73 tests (need the case data in data/handout)
+make eval                                          # validation metrics -> reports/metrics.json
 ```
 
-Без `make` (Windows): `python scripts/build_models.py`, `python predict.py IN=tickets.jsonl OUT=pred.jsonl`, `python -m uvicorn app.main:app --port 8000`, админка: `python -m uvicorn app.admin_app:app --port 8001`.
+Without `make` (Windows): `python scripts/build_models.py`, `python predict.py IN=tickets.jsonl OUT=pred.jsonl`, `python -m uvicorn app.main:app --port 8000`, admin UI: `python -m uvicorn app.admin_app:app --port 8001`.
 
-Через Docker (данные монтируются, в образ не входят):
+With Docker (the data is mounted, not baked into the image):
 
 ```bash
 docker build -t apex-copilot .
 docker run -p 8000:8000 -v "$PWD/data:/app/data" apex-copilot
 ```
 
-Ключ API для работы сервиса не нужен. `make build` обучает из данных кейса модель главного пункта правил, модель вердиктов и базу знаний (~2–3 минуты, локально). Классификатор категорий на хакатоне обучался на разметке 6000 обращений сильной моделью (`scripts/label_llm.py`, нужен ключ Anthropic); эта разметка и веса не публикуются. Без неё классификатор работает на правилах-ключевых словах: точность категории ниже (63.9% против 80.7% на валидации), остальное работает так же. Если `make build` пропустить, `make predict` и `make serve` при первом запуске соберут модели сами.
+No API key is needed to run the service. `make build` trains the main-rule model, the verdict model and the knowledge base from the case data (~2–3 minutes, locally). At the hackathon the category classifier was trained on labels for 6000 tickets produced by a strong model (`scripts/label_llm.py`, needs an Anthropic key); those labels and the weights are not published. Without them the classifier falls back to keyword rules: category accuracy is lower (63.9% vs 80.7% on validation), everything else works the same. If you skip `make build`, `make predict` and `make serve` build the models on first run.
 
-## Контракт
+## Contract
 
-`POST /triage` — запрос и ответ по контракту кейса. Дополнительные поля из схемы датасета (`ticket_id`, `created_at`, `region`, `reporter_hash`, `reported_hash`, `reported_nick`, `rule_refs_raw`, `images_count`) необязательны. Если они есть, улучшаются казахская нормализация, факты, дедупликация и история.
+`POST /triage`: request and response follow the case contract. Extra fields from the dataset schema (`ticket_id`, `created_at`, `region`, `reporter_hash`, `reported_hash`, `reported_nick`, `rule_refs_raw`, `images_count`) are optional. When present, they improve Kazakh normalization, fact extraction, deduplication and history.
 
 ```json
 {
@@ -63,115 +65,118 @@ docker run -p 8000:8000 -v "$PWD/data:/app/data" apex-copilot
   "draft_reply": {"lang": "ru", "cited": ["2.1"],
     "text": "Приветствую! Жалоба на игрока Arman_Petrov принята и передана администратору. По описанию это похоже на нарушение пункта 2.1 ОП. Решение примет администратор после проверки доказательств. Спасибо за обращение."},
   "needs_human": true, "confidence": 0.75,
-  "reasons": ["решение о наказании подтверждает администратор"]
+  "reasons": ["the punishment decision is confirmed by an administrator"]
 }
 ```
 
-`make predict` пишет `pred.jsonl`: одна строка на обращение, `{"ticket_id": ..., <ответ /triage>}`. Битая строка во входном файле не роняет прогон: она получает безопасный ответ «нужен человек».
+(The draft reply is in Russian because the ticket is in Russian. Roughly: "Hello! The complaint about player Arman_Petrov has been accepted and passed to an administrator. By the description it looks like a violation of rule 2.1 of the general rules. The administrator will decide after checking the evidence. Thank you for contacting us.")
 
-`extracted.server` — **регион** сервера (`cis`, `kz`, `uz`, `eu`, `latam`), как поле `region` в данных, а не номер сервера. Он берётся из запроса или из явного упоминания в тексте («kz сервер»). Иначе `null`: по языку регион не угадываем.
+`make predict` writes `pred.jsonl`: one line per ticket, `{"ticket_id": ..., <the /triage response>}`. A broken line in the input does not crash the run: it gets a safe "needs a human" response.
 
-У сервиса **только один эндпоинт** — `POST /triage`, как просили организаторы. Админка — отдельное приложение (`app/admin_app.py`, порт 8001) со своими `/admin` и `/api/*`.
+`extracted.server` is the server **region** (`cis`, `kz`, `uz`, `eu`, `latam`), like the `region` field in the data, not a server number. It is taken from the request or from an explicit mention in the text ("kz server"). Otherwise it is `null`: the region is never guessed from the language.
 
-Поле `lang` в ответе принимает значения `ru`, `kk`, `uz`, `en` или `und`: в кейсе четыре языка, остальные (`es`, `pt` в данных) возвращаются как `und`.
+The service has **a single endpoint**, `POST /triage`, as the organizers asked. The admin UI is a separate application (`app/admin_app.py`, port 8001) with its own `/admin` and `/api/*`.
 
-### Формат ссылок на правила
+The `lang` field in the response takes `ru`, `kk`, `uz`, `en` or `und`: the case has four languages, others (`es`, `pt` in the data) are returned as `und`.
 
-| Раздел | Формат | Пример |
+### Rule reference format
+
+| Section | Format | Example |
 |---|---|---|
-| Общие правила (ОП) | номер пункта | `2.1` |
-| Правила жалоб | `ЖБ <пункт>` | `ЖБ 1.2.7` |
-| Зелёная зона | `GZ <пункт>` | `GZ 1.1` |
-| Разделы без кода | полное название раздела + пункт | `Правила для ОПГ 1.3` |
-| RP-термины | название раздела + термин | `RP термины и их описание DM` |
+| General rules (ОП) | rule number | `2.1` |
+| Complaint rules | `ЖБ <rule>` | `ЖБ 1.2.7` |
+| Green zone | `GZ <rule>` | `GZ 1.1` |
+| Sections without a code | full section name + rule | `Правила для ОПГ 1.3` |
+| RP terms | section name + term | `RP термины и их описание DM` |
 
-## Как устроено
-
-```
-обращение
-  → нормализация: Unicode NFC, cp1251-казахский (ќ→қ, ґ→ғ, ѕ→ң, є→ә, ј→ө, ў→ұ, ї→ү)
-  → язык и графика: ru / kk / uz / en, транслит («osk rodni» → ru), узбекская кириллица, казахская латиница
-  → категория: TF-IDF + логистическая регрессия; явные «взлом / донат» всегда account / payment
-  → приоритет: по типу нарушения, скриншоты не влияют (таксономия + ответ организаторов): p0 доступ к аккаунту, платёж,
-     угрозы вне игры; p1 читы, скам, RMT, жалобы на админа; p2 оскорбления, DM, РП; p3 механика, оффтоп, пустые жалобы
-  → спам («ау», «+», флуд, пустое) и дубли (жалоба: тот же игрок на того же обвиняемого за час; репорт: тот же игрок,
-     похожий текст за час). История — только обращения, которые сервис обработал сам, train/valid не используются
-  → факты: ник, пункты и RP-термины игрока, доказательства, регион
-  → главный пункт: локальная модель по 12.7 тыс. ответов, где админ назвал нарушение (90% совпадений с админом)
-  → черновик: ситуационные шаблоны на ru / kk (кириллицей, с казахскими буквами) / uz (латиницей) / en
-     + ответы из базы знаний админов
-  → защита: каждая цитата сверяется с rules.json; наказания и обещания в черновик не попадают
-  → needs_human и подсказка админу: вероятный вердикт по 59 тыс. прошлых жалоб
-```
-
-**Без галлюцинаций.** Черновик собирается из проверенных фраз, а пункт правил подставляется только из базы правил. Выдуманный пункт в ответ попасть не может. Это проверяется тестами и на валидации: 0 несуществующих цитат.
-
-**Сервис вызывается до ответа админа**, поэтому опирается только на поля контракта: `kind`, сообщения игрока и обвиняемого, число вложений. Остальные поля необязательны. Категория ставится по сути нарушения, приоритет — по типу нарушения, скриншоты идут в `has_evidence`. Если в записи всё же есть апелляционный вердикт или названное админом нарушение, сервис их учитывает.
-
-**Наказаний в черновике нет**, как просили организаторы. Решение о наказании принимает админ. Вероятный вердикт показывается ему отдельной подсказкой.
-
-**Когда нужен человек** (`needs_human: true`). Эскалация не штрафуется, поэтому без человека закрываются только спам и приветствия. Всегда человеку уходят:
-- платежи, аккаунт и взлом;
-- жалобы на администратора и апелляции;
-- разбан и возврат;
-- угрозы.
-
-**Классификация.** Категорий и приоритетов в выданных данных нет. Поэтому 6000 обращений (в два раунда) один раз разметили сильной моделью по таксономии (`scripts/label_llm.py`, только при разработке). На этой разметке обучен локальный классификатор (`scripts/build_models.py`). Внешняя модель в работе сервиса не используется.
-
-**Режим разработки.** `DRAFT_BACKEND=api` с ключом Anthropic включает черновики через Claude Haiku. Он оставлен только для сравнения и выключен по умолчанию: в продакшене тексты игроков нельзя отправлять наружу.
-
-## Интерфейс администратора (бонус)
-
-`make admin` → `http://localhost:8001/admin`, локальный доступ:
-- **массовые действия**: отметить обращения и отправить черновики, эскалировать или закрыть как спам или дубль;
-- очередь по приоритету: срочные, затем p1 → p3; фильтры «нужен человек», «можно отправить», «спам и дубли»;
-- **срочные обращения** (аккаунт, платёж, угрозы): красная плашка, счётчик в заголовке вкладки, браузерное уведомление;
-- карточка: черновик, текст процитированных пунктов, подсказка по вердикту, **история** (прошлые жалобы на обвиняемого и обращения заявителя);
-- правка черновика, исправление категории, разбор нового обращения вживую;
-- работает на телефоне.
-
-Правки админов пишутся в `data/feedback.jsonl`: исходный и итоговый черновик, исправленная категория. Это обучающий сигнал. Правки и история хранятся 6 месяцев (`HISTORY_DAYS`), старое удаляется при запуске.
-
-## Бонус: новые шаблоны
-
-`scripts/suggest_templates.py` кластеризует обращения и по самым частым ответам админов в каждой группе предлагает новый шаблон: `reports/template_suggestions.md`.
-
-## Метрики
-
-`make eval` пишет `reports/metrics.json`. Итоговые цифры и проверенные гипотезы в [REPORT.md](REPORT.md).
-
-## Структура
+## How it works
 
 ```
-app/text.py         нормализация, язык, графика
-app/rules.py        база правил, RP-термины, поиск, проверка цитат
-app/knowledge.py    база знаний из прошлых ответов админов
-app/labels.py       правила категорий и приоритетов
-app/rulepick.py     модель главного пункта правил
-app/verdict.py      вероятный вердикт (подсказка админу)
-app/local_draft.py  локальные черновики ru / kk / uz / en
-app/draft.py        проверки черновика (наказания, обещания, номера правил) и режим разработки через API
-app/pipeline.py     весь конвейер
-app/history.py      история обращений, хранение 6 месяцев
-app/main.py         HTTP-сервис
-app/admin.py, app/static/admin.html   интерфейс администратора
-predict.py          пакетный прогноз (CLI)
-scripts/            обучение, оценка, разметка, шаблоны
-tests/              73 теста
+ticket
+  → normalization: Unicode NFC, cp1251-Kazakh (ќ→қ, ґ→ғ, ѕ→ң, є→ә, ј→ө, ў→ұ, ї→ү)
+  → language and script: ru / kk / uz / en, transliteration ("osk rodni" → ru), Uzbek Cyrillic, Kazakh Latin
+  → category: TF-IDF + logistic regression; explicit "hack / donate" always map to account / payment
+  → priority: by violation type, screenshots do not matter (taxonomy + organizers' answer): p0 account access, payment,
+     off-game threats; p1 cheats, scam, RMT, complaints about admins; p2 insults, DM, RP; p3 mechanics, off-topic, empty complaints
+  → spam ("hello?", "+", flood, empty) and duplicates (complaint: same player against the same accused within an hour;
+     report: same player, similar text within an hour). History uses only tickets the service processed itself,
+     train/valid are not used
+  → facts: nickname, the player's rules and RP terms, evidence, region
+  → main rule: a local model trained on 12.7k answers where an admin named the violation (90% agreement with the admin)
+  → draft: situational templates in ru / kk (Cyrillic, with Kazakh letters) / uz (Latin) / en
+     + answers from the admins' knowledge base
+  → guard: every citation is checked against rules.json; punishments and promises never reach the draft
+  → needs_human and a hint for the admin: likely verdict from 59k past complaints
 ```
 
-## Сторонние материалы
+**No hallucinations.** The draft is assembled from verified phrases, and a rule reference is inserted only from the rule base. An invented rule cannot get into a reply. This is checked by tests and on validation: 0 non-existent citations.
 
-- scikit-learn, NumPy, FastAPI, Uvicorn, python-dotenv (лицензии BSD / MIT).
-- Claude Sonnet 5.5 (Anthropic API) — только при разработке: разовая разметка 6000 обращений (два раунда; организаторы разрешили), оценка качества черновиков и вычитка наших казахских и узбекских шаблонов. В работе сервиса не используется.
-- Anthropic Python SDK (MIT) — для режима разработки `DRAFT_BACKEND=api`.
-- Код написан во время хакатона вместе с ИИ-ассистентом Claude Code (Anthropic): постановка задачи, проверка гипотез, тестирование и решения — команды, коммиты с участием ассистента помечены `Co-Authored-By: Claude`.
-- Данные Grand Mobile, разметка, обученные веса и производные выборки в репозиторий не входят: по условиям хакатона их нельзя публиковать.
+**The service is called before an admin answers**, so it relies only on the contract fields: `kind`, the messages of the player and of the accused, and the attachment count. All other fields are optional. The category follows the nature of the violation, the priority follows the violation type, and screenshots go to `has_evidence`. If a record does contain an appeal verdict or a violation named by an admin, the service takes it into account.
 
-## Презентация
+**There are no punishments in the draft**, as the organizers asked. The punishment decision belongs to the admin. The likely verdict is shown to them as a separate hint.
 
-`docs/presentation.html` — 8 слайдов, открывается в браузере, листается стрелками.
+**When a human is needed** (`needs_human: true`). Escalation is not penalized, so only spam and greetings are closed without a human. These always go to a human:
+- payments, account and hacking;
+- complaints about an administrator and appeals;
+- unban and refund requests;
+- threats.
 
-## Лицензия
+**Classification.** The provided data has no categories or priorities. So 6000 tickets (in two rounds) were labeled once by a strong model against the taxonomy (`scripts/label_llm.py`, development only). The local classifier is trained on those labels (`scripts/build_models.py`). No external model is used when the service runs.
 
-Код распространяется по лицензии [MIT](LICENSE): его можно использовать, менять и распространять, сохранив упоминание автора. Лицензия касается только кода этого репозитория: данные Grand Mobile в него не входят и под неё не подпадают.
+**Development mode.** `DRAFT_BACKEND=api` with an Anthropic key switches drafting to Claude Haiku. It is kept for comparison only and is off by default: in production, player texts must not be sent outside.
+
+## Admin interface (bonus)
+
+`make admin` → `http://localhost:8001/admin`, local access:
+- **bulk actions**: select tickets and send drafts, escalate, or close as spam or duplicate;
+- a priority queue: urgent first, then p1 → p3; filters "needs a human", "can be sent", "spam and duplicates";
+- **urgent tickets** (account, payment, threats): a red banner, a counter in the tab title, a browser notification;
+- ticket card: the draft, the text of the cited rules, the verdict hint, **history** (past complaints about the accused and tickets from the reporter);
+- editing the draft, correcting the category, triaging a new ticket live;
+- works on a phone.
+
+Admin edits are written to `data/feedback.jsonl`: the original and final draft and the corrected category. This is a training signal. Edits and history are kept for 6 months (`HISTORY_DAYS`), older records are deleted on startup.
+
+## Bonus: new templates
+
+`scripts/suggest_templates.py` clusters tickets and proposes a new template from the most frequent admin answers in each group: `reports/template_suggestions.md`.
+
+## Metrics
+
+`make eval` writes `reports/metrics.json`. Final numbers and the hypotheses we tested are in [REPORT.md](REPORT.md).
+
+## Layout
+
+```
+app/text.py         normalization, language, script
+app/rules.py        rule base, RP terms, search, citation check
+app/knowledge.py    knowledge base built from past admin answers
+app/labels.py       category and priority rules
+app/rulepick.py     main-rule model
+app/verdict.py      likely verdict (hint for the admin)
+app/local_draft.py  local drafts in ru / kk / uz / en
+app/draft.py        draft checks (punishments, promises, rule numbers) and the API development mode
+app/pipeline.py     the whole pipeline
+app/history.py      ticket history, 6-month retention
+app/main.py         HTTP service
+app/admin.py, app/static/admin.html   admin interface
+predict.py          batch prediction (CLI)
+scripts/            training, evaluation, labeling, templates
+tests/              73 tests
+```
+
+## Third-party materials
+
+- scikit-learn, NumPy, FastAPI, Uvicorn, python-dotenv (BSD / MIT licenses).
+- Claude Sonnet 5.5 (Anthropic API), at development time only: a one-off labeling of 6000 tickets (two rounds; allowed by the organizers), quality evaluation of the drafts and proofreading of our Kazakh and Uzbek templates. It is not used when the service runs.
+- Anthropic Python SDK (MIT), for the `DRAFT_BACKEND=api` development mode.
+- The code was written during the hackathon together with the AI assistant Claude Code (Anthropic): the problem framing, hypothesis testing, testing and decisions were the team's; commits made with the assistant's participation are marked `Co-Authored-By: Claude`.
+- Grand Mobile data, labels, trained weights and derived samples are not in the repository: under the hackathon rules they must not be published.
+
+## Presentation
+
+`docs/presentation.html`: 8 slides, opens in a browser, flip with the arrow keys.
+
+## License
+
+The code is released under the [MIT](LICENSE) license: you may use, modify and distribute it, keeping the author's attribution. The license covers only the code of this repository: Grand Mobile data is not included and is not covered by it.
